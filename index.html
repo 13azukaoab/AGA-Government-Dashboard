@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AGA Government Customers Dashboard</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .card-gradient-1 { background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); } /* Royal Blue */
+        .card-gradient-2 { background: linear-gradient(135deg, #065f46 0%, #10b981 100%); } /* Emerald */
+        .card-gradient-3 { background: linear-gradient(135deg, #92400e 0%, #d97706 100%); } /* Amber */
+        .card-gradient-4 { background: linear-gradient(135deg, #4c1d95 0%, #8b5cf6 100%); } /* Violet */
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #c5c5c5; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <!-- Sidebar -->
+    <div class="fixed inset-y-0 left-0 w-64 bg-slate-900 text-white transform -translate-x-full md:translate-x-0 transition-transform duration-300 z-50 shadow-xl" id="sidebar">
+        <div class="p-6 border-b border-slate-700 flex items-center justify-center">
+            <h1 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">AGA Dashboard</h1>
+        </div>
+        
+        <nav class="mt-6 px-4 space-y-2">
+            <a href="#" id="nav-overview" class="flex items-center space-x-3 px-4 py-3 bg-blue-600 rounded-lg shadow-lg text-white" onclick="switchTab('overview')">
+                <i class="fas fa-chart-pie w-5"></i>
+                <span>ภาพรวม (Overview)</span>
+            </a>
+            <a href="#" id="nav-database" class="flex items-center space-x-3 px-4 py-3 hover:bg-slate-800 rounded-lg transition-colors text-slate-300 hover:text-white" onclick="switchTab('database')">
+                <i class="fas fa-table w-5"></i>
+                <span>ฐานข้อมูล (Database)</span>
+            </a>
+            <a href="#" id="nav-comparison" class="flex items-center space-x-3 px-4 py-3 hover:bg-slate-800 rounded-lg transition-colors text-slate-300 hover:text-white" onclick="switchTab('comparison')">
+                <i class="fas fa-balance-scale w-5"></i>
+                <span>เปรียบเทียบ (Compare)</span>
+            </a>
+        </nav>
+
+        <div class="absolute bottom-0 w-full p-4 border-t border-slate-700">
+            <div class="text-xs text-slate-400 text-center">
+                &copy; 2025 AGA Data Team
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="md:ml-64 min-h-screen flex flex-col">
+        
+        <!-- Top Bar -->
+        <header class="bg-white shadow-sm sticky top-0 z-40">
+            <div class="px-6 py-4 flex justify-between items-center">
+                <button class="md:hidden text-gray-600" onclick="document.getElementById('sidebar').classList.toggle('-translate-x-full')">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+                <h2 class="text-xl font-semibold text-gray-800">รายงานลูกค้าราชการ (Government Customers)</h2>
+                <div class="flex items-center space-x-4">
+                    <div class="text-sm text-gray-500 hidden sm:block">Update: <span id="currentDate"></span></div>
+                    <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold border border-blue-200">
+                        ADMIN
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Dynamic Content -->
+        <main class="flex-1 p-6" id="mainContent">
+            
+            <!-- MONTH NOTICE -->
+            <div id="monthNote" class="mb-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm flex items-start gap-2 hidden">
+                <i class="fas fa-circle-info mt-0.5"></i>
+                <span></span>
+            </div>
+
+            <!-- GLOBAL FILTERS -->
+            <div class="mb-8 p-4 bg-white rounded-xl shadow-sm border border-gray-100 flex flex-wrap gap-4 items-end">
+                <div class="flex-1 min-w-[160px]">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">เดือนข้อมูล (Month)</label>
+                    <select id="filterMonth" onchange="switchMonth(this.value)" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
+                        <option value="NOV.25">NOV.25</option>
+                        <option value="MAY.26">MAY.26</option>
+                    </select>
+                </div>
+                <div class="flex-1 min-w-[200px]">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">เขต (Zone)</label>
+                    <select id="filterZone" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
+                        <option value="all">ทั้งหมด (All Zones)</option>
+                    </select>
+                </div>
+                <div class="flex-1 min-w-[200px]">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">สาขา (Branch)</label>
+                    <select id="filterBranch" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
+                        <option value="all">ทั้งหมด (All Branches)</option>
+                    </select>
+                </div>
+                <div>
+                    <button onclick="applyFilters()" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium shadow transition-all flex items-center gap-2">
+                        <i class="fas fa-filter"></i> กรองข้อมูล
+                    </button>
+                </div>
+                <div>
+                    <button onclick="resetFilters()" class="px-5 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition-all">
+                        Reset
+                    </button>
+                </div>
+            </div>
+
+            <!-- VIEW: OVERVIEW -->
+            <div id="view-overview" class="space-y-6 animate-fade-in">
+                <!-- KPI Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="card-gradient-1 rounded-2xl p-5 text-white shadow-lg relative overflow-hidden group">
+                        <div class="absolute right-0 top-0 opacity-10 transform translate-x-3 -translate-y-3 group-hover:scale-110 transition-transform">
+                            <i class="fas fa-users text-8xl"></i>
+                        </div>
+                        <p class="text-blue-100 text-sm font-medium">ลูกค้าทั้งหมด (Clients)</p>
+                        <h3 class="text-3xl font-bold mt-1" id="kpi-total-clients">0</h3>
+                        <p class="text-xs text-blue-200 mt-2"><i class="fas fa-arrow-up"></i> Active Contracts</p>
+                    </div>
+
+                    <div class="card-gradient-2 rounded-2xl p-5 text-white shadow-lg relative overflow-hidden group">
+                        <div class="absolute right-0 top-0 opacity-10 transform translate-x-3 -translate-y-3 group-hover:scale-110 transition-transform">
+                            <i class="fas fa-coins text-8xl"></i>
+                        </div>
+                        <p class="text-emerald-100 text-sm font-medium">มูลค่ารวม (Total Value)</p>
+                        <h3 class="text-2xl font-bold mt-1" id="kpi-total-value">฿0</h3>
+                        <p class="text-xs text-emerald-200 mt-2">Combined 1Yr & 3Yr</p>
+                    </div>
+
+                    <div class="card-gradient-3 rounded-2xl p-5 text-white shadow-lg relative overflow-hidden group">
+                        <div class="absolute right-0 top-0 opacity-10 transform translate-x-3 -translate-y-3 group-hover:scale-110 transition-transform">
+                            <i class="fas fa-layer-group text-8xl"></i>
+                        </div>
+                        <p class="text-amber-100 text-sm font-medium">สถานีดิน (IG Total)</p>
+                        <h3 class="text-3xl font-bold mt-1" id="kpi-total-ig">0</h3>
+                        <p class="text-xs text-amber-200 mt-2">Stations</p>
+                    </div>
+
+                    <div class="card-gradient-4 rounded-2xl p-5 text-white shadow-lg relative overflow-hidden group">
+                        <div class="absolute right-0 top-0 opacity-10 transform translate-x-3 -translate-y-3 group-hover:scale-110 transition-transform">
+                            <i class="fas fa-cubes text-8xl"></i>
+                        </div>
+                        <p class="text-violet-100 text-sm font-medium">สถานีปูน (IC Total)</p>
+                        <h3 class="text-3xl font-bold mt-1" id="kpi-total-ic">0</h3>
+                        <p class="text-xs text-violet-200 mt-2">Stations</p>
+                    </div>
+                </div>
+
+                <!-- Charts Section -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Main Bar Chart -->
+                    <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4 border-l-4 border-blue-500 pl-3">มูลค่าสัญญาตามเขต (Value by Zone)</h3>
+                        <div class="h-80 w-full relative">
+                            <canvas id="chartZoneValue"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Pie Chart -->
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4 border-l-4 border-emerald-500 pl-3">สัดส่วนสถานี (Station Ratio)</h3>
+                        <div class="h-64 w-full relative flex items-center justify-center">
+                            <canvas id="chartStationRatio"></canvas>
+                        </div>
+                        <div class="mt-4 flex justify-around text-center">
+                            <div>
+                                <span class="block text-2xl font-bold text-amber-500" id="ratio-ig-val">0%</span>
+                                <span class="text-xs text-gray-500">IG (ดิน)</span>
+                            </div>
+                            <div>
+                                <span class="block text-2xl font-bold text-violet-500" id="ratio-ic-val">0%</span>
+                                <span class="text-xs text-gray-500">IC (ปูน)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Top Branches Table Preview -->
+                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 border-l-4 border-indigo-500 pl-3">5 อันดับสาขาที่มีมูลค่าสูงสุด (Top 5 Branches)</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left text-gray-500">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3">สาขา (Branch)</th>
+                                    <th class="px-6 py-3">เขต (Zone)</th>
+                                    <th class="px-6 py-3 text-right">จำนวนลูกค้า (Clients)</th>
+                                    <th class="px-6 py-3 text-right">มูลค่ารวม (Total Value)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="top-branches-tbody">
+                                <!-- JS Populated -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: DATABASE -->
+            <div id="view-database" class="hidden space-y-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                        <h3 class="text-lg font-bold text-gray-800 border-l-4 border-blue-500 pl-3">ข้อมูลรายชื่อลูกค้า (Client Database)</h3>
+                        <div class="relative w-full md:w-96">
+                            <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                <i class="fas fa-search text-gray-400"></i>
+                            </div>
+                            <input type="text" id="searchInput" onkeyup="searchTable()" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-2.5" placeholder="ค้นหาชื่อลูกค้า, สาขา, สัญญา...">
+                        </div>
+                    </div>
+                    
+                    <div class="overflow-x-auto max-h-[700px]">
+                        <table class="w-full text-sm text-left text-gray-500">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0 z-10 shadow">
+                                <tr>
+                                    <th class="px-4 py-3 cursor-pointer" onclick="sortTable(0)">โซน <i class="fas fa-sort"></i></th>
+                                    <th class="px-4 py-3 cursor-pointer" onclick="sortTable(1)">สาขา <i class="fas fa-sort"></i></th>
+                                    <th class="px-4 py-3 cursor-pointer" onclick="sortTable(2)">ชื่อลูกค้า <i class="fas fa-sort"></i></th>
+                                    <th class="px-4 py-3 text-center">IG</th>
+                                    <th class="px-4 py-3 text-center">IC</th>
+                                    <th class="px-4 py-3 text-right cursor-pointer" onclick="sortTable(5)">สัญญา 1 ปี <i class="fas fa-sort"></i></th>
+                                    <th class="px-4 py-3 text-right cursor-pointer" onclick="sortTable(6)">สัญญา 3 ปี <i class="fas fa-sort"></i></th>
+                                    <th class="px-4 py-3 text-center">ระยะเวลา</th>
+                                    <th class="px-4 py-3">รายละเอียด</th>
+                                </tr>
+                            </thead>
+                            <tbody id="full-database-tbody" class="divide-y divide-gray-100">
+                                <!-- JS Populated -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="mt-4 text-xs text-gray-400 text-right" id="result-count">
+                        Showing all records
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: COMPARISON -->
+            <div id="view-comparison" class="hidden space-y-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <h3 class="text-lg font-bold text-gray-800 mb-1 border-l-4 border-purple-500 pl-3">เปรียบเทียบ (Branch / Month Comparison)</h3>
+                    <p class="text-xs text-gray-400 mb-6 pl-3">เลือกเดือน + สาขาแต่ละฝั่งได้อิสระ เพื่อเทียบข้อมูลข้ามเดือนหรือข้ามสาขาก็ได้</p>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <!-- Selection 1 -->
+                        <div class="p-6 bg-slate-50 rounded-xl border border-slate-200">
+                            <label class="block mb-2 font-bold text-slate-700">ฝั่งที่ 1</label>
+                            <div class="grid grid-cols-2 gap-2 mb-4">
+                                <select id="compare1Month" onchange="renderComparison()" class="w-full p-2.5 bg-white border border-gray-300 rounded-lg shadow-sm">
+                                    <option value="NOV.25">NOV.25</option>
+                                    <option value="MAY.26">MAY.26</option>
+                                </select>
+                                <select id="compare1" onchange="renderComparison()" class="w-full p-2.5 bg-white border border-gray-300 rounded-lg shadow-sm">
+                                    <option value="">-- Select Branch --</option>
+                                </select>
+                            </div>
+                            
+                            <div id="compare1-stats" class="space-y-4 opacity-50 transition-opacity">
+                                <div class="bg-white p-4 rounded-lg shadow-sm">
+                                    <p class="text-xs text-gray-500 uppercase">Total Clients</p>
+                                    <h4 class="text-xl font-bold text-blue-600" id="c1-clients">-</h4>
+                                </div>
+                                <div class="bg-white p-4 rounded-lg shadow-sm">
+                                    <p class="text-xs text-gray-500 uppercase">Total Value</p>
+                                    <h4 class="text-xl font-bold text-emerald-600" id="c1-value">-</h4>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="bg-white p-4 rounded-lg shadow-sm text-center">
+                                        <p class="text-xs text-gray-500">IG</p>
+                                        <h4 class="text-lg font-bold text-amber-600" id="c1-ig">-</h4>
+                                    </div>
+                                    <div class="bg-white p-4 rounded-lg shadow-sm text-center">
+                                        <p class="text-xs text-gray-500">IC</p>
+                                        <h4 class="text-lg font-bold text-violet-600" id="c1-ic">-</h4>
+                                    </div>
+                                </div>
+                                <!-- Customer List -->
+                                <div id="c1-list" class="mt-4 space-y-3 max-h-96 overflow-y-auto pr-2"></div>
+                            </div>
+                        </div>
+
+                        <!-- Selection 2 -->
+                        <div class="p-6 bg-slate-50 rounded-xl border border-slate-200">
+                            <label class="block mb-2 font-bold text-slate-700">ฝั่งที่ 2</label>
+                            <div class="grid grid-cols-2 gap-2 mb-4">
+                                <select id="compare2Month" onchange="renderComparison()" class="w-full p-2.5 bg-white border border-gray-300 rounded-lg shadow-sm">
+                                    <option value="NOV.25">NOV.25</option>
+                                    <option value="MAY.26" selected>MAY.26</option>
+                                </select>
+                                <select id="compare2" onchange="renderComparison()" class="w-full p-2.5 bg-white border border-gray-300 rounded-lg shadow-sm">
+                                    <option value="">-- Select Branch --</option>
+                                </select>
+                            </div>
+                            
+                            <div id="compare2-stats" class="space-y-4 opacity-50 transition-opacity">
+                                <div class="bg-white p-4 rounded-lg shadow-sm">
+                                    <p class="text-xs text-gray-500 uppercase">Total Clients</p>
+                                    <h4 class="text-xl font-bold text-blue-600" id="c2-clients">-</h4>
+                                </div>
+                                <div class="bg-white p-4 rounded-lg shadow-sm">
+                                    <p class="text-xs text-gray-500 uppercase">Total Value</p>
+                                    <h4 class="text-xl font-bold text-emerald-600" id="c2-value">-</h4>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="bg-white p-4 rounded-lg shadow-sm text-center">
+                                        <p class="text-xs text-gray-500">IG</p>
+                                        <h4 class="text-lg font-bold text-amber-600" id="c2-ig">-</h4>
+                                    </div>
+                                    <div class="bg-white p-4 rounded-lg shadow-sm text-center">
+                                        <p class="text-xs text-gray-500">IC</p>
+                                        <h4 class="text-lg font-bold text-violet-600" id="c2-ic">-</h4>
+                                    </div>
+                                </div>
+                                <!-- Customer List -->
+                                <div id="c2-list" class="mt-4 space-y-3 max-h-96 overflow-y-auto pr-2"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- DELTA / DIFFERENCE SUMMARY -->
+                    <div id="compare-delta" class="mt-8 pt-6 border-t border-gray-200 hidden">
+                        <h4 class="text-sm font-bold text-gray-500 uppercase mb-4">ส่วนต่าง (ฝั่งที่ 2 − ฝั่งที่ 1)</h4>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div class="bg-slate-50 p-4 rounded-lg text-center border border-slate-200">
+                                <p class="text-xs text-gray-500">ลูกค้า (Clients)</p>
+                                <h4 class="text-xl font-bold" id="delta-clients">-</h4>
+                            </div>
+                            <div class="bg-slate-50 p-4 rounded-lg text-center border border-slate-200">
+                                <p class="text-xs text-gray-500">มูลค่า (Value)</p>
+                                <h4 class="text-xl font-bold" id="delta-value">-</h4>
+                            </div>
+                            <div class="bg-slate-50 p-4 rounded-lg text-center border border-slate-200">
+                                <p class="text-xs text-gray-500">IG</p>
+                                <h4 class="text-xl font-bold" id="delta-ig">-</h4>
+                            </div>
+                            <div class="bg-slate-50 p-4 rounded-lg text-center border border-slate-200">
+                                <p class="text-xs text-gray-500">IC</p>
+                                <h4 class="text-xl font-bold" id="delta-ic">-</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- DATA SCRIPT -->
+    <script>
+        // EMBEDDED DATA FROM EXECUTION STEP
+        const rawDataNov25 = [{"Zone":"1","Branch":"พุทธมณฑล","Val3Year":"","VolIG":"274","EndDate":"16/10/2026","Customer":"สถาบันกัลยาณ์ราชนครินทร์","ContractId":"CT25-0019573","VolIC":"15","StartDate":"17/10/2025","Address":"เลขทื่ 23 หมู่ 8  ถนนพุทธมณฑลสาย 4  แขวงทวีวัฒนา  เขตทวีวัฒนา  กรุงเทพ","Val1Year":"            315,650.00 "},{"Zone":"1","Branch":"นครปฐม","Val3Year":"","VolIG":"130","EndDate":"30/9/2026","Customer":"สำนักงานอัยการภาค  7","ContractId":"CT25-0027727","VolIC":"50","StartDate":"1/10/2025","Address":"สำนักงานอัยการภาค7   ถนนสมบูรณ์  ต.หน้าเมือง  อ.เมือง  จงราชบุรี","Val1Year":"            215,000.00 "},{"Zone":"1","Branch":"นครปฐม","Val3Year":"","VolIG":"45","EndDate":"20/10/2026","Customer":"มหาวิทยาลัยมหิดล (คณะเทคนิคการแพทย์)","ContractId":"CT25-0028074","VolIC":"24","StartDate":"21/10/2025","Address":"เลขที่ 999 ถนนพุทธมณฑลสาย 4  ต.ศาลายา  อ.พุทธมณฑล  จ.นครปฐม","Val1Year":"              52,545.29 "},{"Zone":"1","Branch":"หัวหิน","Val3Year":"","VolIG":"18","EndDate":"2/12/2025","Customer":"โครงการชั่งหัวมัน  ตามพระราชดำริ","ContractId":"CT25-0001662","VolIC":"","StartDate":"01/01/026","Address":"เลขที่ 1 หมู่ 5  ต.เขากระปุก  อ.ท่ายาง  จ.เพชรบุรี","Val1Year":"              23,540.00 "},{"Zone":"2","Branch":"ปทุมวัน","Val3Year":"","VolIG":"15","EndDate":"23/12/2025","Customer":"สำนักงานการทะเบียน จุฬาลงกรณ์มหาวิทยาลัย","ContractId":"CT24-0029088","VolIC":"","StartDate":"24/12/2024","Address":"เลขที่ 254 ถนนพญาไท  แขวงวังใหม่  เขตปทุมวัน  กรุงเทพ","Val1Year":"              35,096.00 "},{"Zone":"2","Branch":"ปทุมวัน","Val3Year":"","VolIG":"73","EndDate":"30/6/2026","Customer":"Jones Lang Lasalle Management Ltd.(Head office)","ContractId":"CT25-0023246","VolIC":"","StartDate":"1/8/2025","Address":"เลขที่ 181  ถน  เขตปทุมวัน  กรุงเทพนวิทยุ  แขวงลุมพินี","Val1Year":"            137,316.71 "},{"Zone":"2","Branch":"นนทบุรี","Val3Year":"","VolIG":"32","EndDate":"9/10/2026","Customer":"สถาบันบัณฑิตศึกษาจุฬาภรณ์","ContractId":"CT25-0020676","VolIC":"","StartDate":"10/10/2025","Address":"เลขที่ 54  ถนนกำแพงเพชร 6  แขวงตลาดบางเขน  เขตหลักสี่  กรุงเทพ","Val1Year":"36,380.00"},{"Zone":"3","Branch":"ปทุมธานี","Val3Year":"","VolIG":"145","EndDate":"30/9/2026","Customer":" โรงเรียนสาธิตแห่งมหาวิทยาลัยธรรมศาสตร์","ContractId":"CT25-0019918","VolIC":"","StartDate":"1/10/2002","Address":"99  ม.18  ถ.พหลโยธิน  ต.คลองหนึ่ง  อ.คลองหลวง  จ.ปทุมธานี","Val1Year":"179,974.00"},{"Zone":"3","Branch":"อยุธยา","Val3Year":"","VolIG":"23","EndDate":"30/9/2026","Customer":" มหาวิทยาลัยมหาจุฬาลงกรณราชวิทยาลัย","ContractId":"CT25-0024806","VolIC":"30","StartDate":"1/10/2025","Address":"79  ม.1  ต.ลำไทร  อ.วังน้อย  จ.พระนครศรีอยุธยา","Val1Year":"              73,958.40 "},{"Zone":"4","Branch":"สุวินทวงส์","Val3Year":"","VolIG":"36","EndDate":"30/9/2026","Customer":"สำนักงานพัฒนาวิทยาศาสตร์และเทคโนโลยี","ContractId":"CT25-0025174","VolIC":"","StartDate":"1/10/2025","Address":"51/4  ม.1  ถ.สุวินทวงศ์  ต.วังตะเคียน  อ.เมือง  จ.ฉะเชิงเทรา","Val1Year":"99,510.00"},{"Zone":"4","Branch":"ประชาชื่น","Val3Year":"","VolIG":"9","EndDate":"30/11/2025","Customer":"โรงพยาบาลพระมงกุฎเกล้า","ContractId":"CT24-0026309","VolIC":"74","StartDate":"1/12/2024","Address":"อาคารสมเด็จพระนางเจ้าสิริกิต์  พระบรมราชินี315  ถ.ราชวิถี  แขวงทุ่งพญาไท  เขตราชเทวี  กทม","Val1Year":"            210,576.00 "},{"Zone":"4","Branch":"ประชาชื่น","Val3Year":"","VolIG":"57","EndDate":"31/12/2025","Customer":"สภาการพยาบาล","ContractId":"CT25-0000739","VolIC":"","StartDate":"1/1/2025","Address":"อาคารนครินทร์ ในบริเวณกระทรวงสาธารณสุข  ถนนติวานนท์ต.ตลาดขวัญ  จ.นนทบุรี","Val1Year":"              95,000.00 "},{"Zone":"4","Branch":"ประชาชื่น","Val3Year":"","VolIG":"23","EndDate":"12/3/2026","Customer":"คณะพาณิชยศาสตร์และการบัญชี มหาวิทยาลัยธรรมศาสตร์","ContractId":"CT25-0004243","VolIC":"48","StartDate":"13/3/2025","Address":"เลขที่ 2  ซอยพระจันทร์  แขวงพระบรมมหาราชวัง  เขตพระนคร  กรุงเทพ","Val1Year":"            123,000.00 "},{"Zone":"4","Branch":"ประชาชื่น","Val3Year":"","VolIG":"25","EndDate":"14/10/2026","Customer":"กองคลัง กรมวิชาการเกษตร (พระบรมราชวัง)","ContractId":"Ct25-0021763","VolIC":"","StartDate":"15/10/2025","Address":"เลขที่ 50 ตึกจักรทอง  แขวงลาดยาว  เขตจตุจักร  กรุงเทพ","Val1Year":"252,828.16"},{"Zone":"4","Branch":"ประชาชื่น","Val3Year":"","VolIG":"185","EndDate":"30/9/2026","Customer":"สำนักอำนวยการประจำศาลฎีกา","ContractId":"CT125-0021232","VolIC":"","StartDate":"1/10/2025","Address":"เลขที่ 6  ถนนราชดำเนินใน  แขวงพระบรมมหาราชวัง  เขตพระนคร  กรุงเทพ","Val1Year":"189,047.60"},{"Zone":"4","Branch":"ประชาชื่น","Val3Year":"","VolIG":"10","EndDate":"2/10/2026","Customer":"กองคลัง  กรมวิชาการเกษตร","ContractId":"CT25-0021534","VolIC":"88","StartDate":"3/10/2025","Address":"พื้นที่ 004  (  วิภาวดี  )  แขวงสามเสน  เขตพญาไทย  จ.กทม","Val1Year":"148,481.76"},{"Zone":"4","Branch":"ประชาชื่น","Val3Year":"","VolIG":"161","EndDate":"30/9/2026","Customer":" กรมสุขภาพจิต  กระทรงสาธารณสุข","ContractId":"CT25-0026885","VolIC":"","StartDate":"1/10/2025","Address":"88/20  ม.4  ถ.ติวานนท์  ต.ตลาดขวัญ  อ.เมือง  จ.นนทบุรี","Val1Year":"104,325.00"},{"Zone":"4","Branch":"ประชาชื่น","Val3Year":"","VolIG":"100","EndDate":"24/10/2026","Customer":"กองคลังกรมวิชาการเกษตร","ContractId":"CT25-0021764","VolIC":"","StartDate":"25/10/2025","Address":"พื้นที่ 06 วังสวนจิตรลดา (พระตำหนักจิตรลดาหาฐาน หอพระสมุดใหม่ ศาลาดุสิตดาลัย กองตำรวจวัง)","Val1Year":"357,112.50"},{"Zone":"4","Branch":"ประชาชื่น","Val3Year":"","VolIG":"9","EndDate":"30/9/2026","Customer":" โรงพยาบาลพระมงกุฎเกล้า (หน่วยตรวจโรคที่ 10)","ContractId":"CT25-0027078","VolIC":"9","StartDate":"1/10/2025","Address":"เลขที่ 1156/11  ถนนสามเสน  แขวงถนนนคไชยศรี  เขตดุสิต  กรุงเทพ","Val1Year":"31,565.00"},{"Zone":"5","Branch":"ปราจีนบุรี","Val3Year":"","VolIG":"17","EndDate":"18/7/2026","Customer":" สหกณ์โคนมวังน้ำเย็น จำกัด ( สำนักงานใหญ่ )","ContractId":"CT25-0013307","VolIC":"","StartDate":"19/7/2025","Address":"669  ม.1  ต.วังใหม่  อ.วังสมบูรณ์  จ.สระแก้ว","Val1Year":"              28,890.00 "},{"Zone":"5","Branch":"ปราจีนบุรี","Val3Year":"","VolIG":"65","EndDate":"24/10/2026","Customer":"ศาลเยาวชนและครอบครัว  สระแก้ว","ContractId":"CT25-0025847","VolIC":"","StartDate":"25/10/2025","Address":"เลขที่ 1098 หมู่ 2 ถนนสุวรรณศร  ต.ท่าเกษม  อ.เมือง  จ.สระแก้ว","Val1Year":"87,312.00"},{"Zone":"5","Branch":"สมุทปราการ","Val3Year":"","VolIG":"107","EndDate":"31/12/2025","Customer":" บริษัทเชื้อเพลิงการบินกรุงเทพ  จำกัด  (  มหาชน  )  (  สำนักงานใหญ่  )","ContractId":"CT25-0002693","VolIC":"","StartDate":"1/1/2025","Address":"99  ม.10  ซ.ลาดกระบัง54  ต.ศรีษะ  อ.บางเสาธง  สมุทรปราการ","Val1Year":"            233,260.00 "},{"Zone":"4","Branch":"ประชาชื่น","Val3Year":"","VolIG":"118","EndDate":"30/9/2026","Customer":"สำนักงานปลัดกระทรวงสาธารณสุข","ContractId":"CT25-0027364","VolIC":"","StartDate":"1/10/2025","Address":"เลขที่ 88/20  ถนนติวานนท์  ต.ตลาดขวัญ  อ.เมือง  จ.นนทบุรี","Val1Year":"96,000.00"},{"Zone":"6","Branch":"ปากน้ำ","Val3Year":"","VolIG":"24","EndDate":"30/9/2026","Customer":" โรงเรียนเทศบาล  5  (วัดกลางวรวิหาร)","ContractId":"CT25-0024648","VolIC":"","StartDate":"1/10/2025","Address":"เลขที่ 13 ซอยวัดกลาง  ต.ปากน้ำ  อ.เมือง  จ.สมุทรปราการ","Val1Year":"49,999.00"},{"Zone":"6","Branch":"ปากน้ำ","Val3Year":"","VolIG":"95","EndDate":"4/11/2026","Customer":" โรงเรียนเทศบาล 4 (สิทธิไชยอุปถัมภ์)","ContractId":"CT25-0028714","VolIC":"","StartDate":"5/11/2025","Address":"เลขที่ 130 ซอย 1 มบ.ศุภวิช  ต.ปากน้ำ  อ.เมืองสมุทรปราการ  จ.สมุทรปราการ","Val1Year":"137,163.23"},{"Zone":"6","Branch":"ชลบุรี","Val3Year":"","VolIG":"12","EndDate":"9/10/2026","Customer":" สำนักงานป้องกันควบคุ้มโรคที่6  จงหวัดชลบุรี","ContractId":"CT25-0027815","VolIC":"17","StartDate":"10/11/2025","Address":"29/85   ม.4  ต.บ้านสวน  อ.ชลบุรี  จ.ชลบุรี","Val1Year":"66,000.00"},{"Zone":"6","Branch":"ชลบุรี","Val3Year":"","VolIG":"13","EndDate":"30/9/2026","Customer":" โรงพยาบาลพนัสนิคม","ContractId":"CT25-0026015","VolIC":"6","StartDate":"1/10/2025","Address":"เลขที่ 68 หมู่ 6  ถนนสุขประยูร  ต.กุฎโง้ง  อ.พนัสนิคม  จ.ชลบุรี","Val1Year":"49,519.60"},{"Zone":"6","Branch":"ชลบุรี","Val3Year":"","VolIG":"17","EndDate":"23/10/2026","Customer":" สำนักงานพัฒนาเทคโนโลยีอวกาศและภูมิสารสนเทศ (องค์การมหาชน)","ContractId":"CT25-0027829","VolIC":"3","StartDate":"24/10/2025","Address":"เลขที่ 88 หมู่ 9  ต.ทุ่งสุขลา อ.ศรีราชา  จ.ชลบุรี","Val1Year":"25,198.50"},{"Zone":"7","Branch":"เชียงใหม่","Val3Year":"","VolIG":"19","EndDate":"30/09/2026","Customer":"โรงพยาบาลจอมทอง","ContractId":"CT25-0024546","VolIC":"","StartDate":"10/1/2025","Address":"เลขที่259 หมู่ที่2 ถนนเชียงใหม่-ฮอด","Val1Year":"              30,067.00 "},{"Zone":"8","Branch":"อุดรธานี","Val3Year":"","VolIG":"20","EndDate":"28/10/2026","Customer":"สำนักงานอัยการจังหวัดหนองบัวลำภุ","ContractId":"CT24-0025354","VolIC":"","StartDate":"29/10/2025","Address":"ศูนย์ราชการจังหวัดหนองบัวลำภู  ตำบลลำภู อำเภอเมืองหนองบัวลำจ.หนองบัวลำภู","Val1Year":"              33,411.22 "},{"Zone":"9","Branch":"ปากช่อง","Val3Year":"","VolIG":"36","EndDate":"2/2/2026","Customer":" โรงเรียนบ้านหมูสี","ContractId":"CT25-0006231","VolIC":"","StartDate":"3/2/2025","Address":"เลขที่ 301 หมู่ 4  ต.หมูสี  อ.ปากช่อง  จ.นครรราชสีมา","Val1Year":"              38,787.00 "},{"Zone":"9","Branch":"ปากช่อง","Val3Year":"","VolIG":"17","EndDate":"14/10/2026","Customer":"โรงเรียนเที่ยงธรรมวิทยา","ContractId":"CT25-0027160","VolIC":"","StartDate":"15/10/2025","Address":"40  ม.10  ต.คลองไผ่  อ.สีคิ้ว  จ.นครราชสีมา ","Val1Year":"27,713.00"},{"Zone":"9","Branch":"สระบุรี","Val3Year":"","VolIG":"12","EndDate":"31/10/2026","Customer":"โรงพยบาลส่งเสริมสุขภาพตำบลหนองยาว","ContractId":"065-863-3867  คุณมิ้น","VolIC":"2","StartDate":"1/11/2025","Address":"บ้านพัก 2 หลังโรงพยาบาลส่งเสริมสุขภาพตำบลหนองยาว  ต.หนองยาว  อ.เมือง  จ.สระบุรี","Val1Year":"32,100.00"},{"Zone":"9","Branch":"สระบุรี","Val3Year":"","VolIG":"248","EndDate":"8/10/2026","Customer":"ศุนย์วิจัยไพรเมทแห่งชาติ จุฬาลงกรณ์มหาวิทยาลัย","ContractId":"080-253-3303  คุณเซฟ","VolIC":"","StartDate":"9/10/2025","Address":"ถนนแก่งคอย-บ้านนา  ต.ห้วยแห้ง  อ.แก่งคอย  จ.สระบุรี","Val1Year":"177,359.99"},{"Zone":"10","Branch":"เกาะสมุย","Val3Year":"","VolIG":"130","EndDate":"30/9/2026","Customer":"โรงพยาบาลเกาะพะงัน","ContractId":"085-7862991","VolIC":"","StartDate":"1/10/2025","Address":"เลขที่ 6 หมู่ 4 ต.เกาะพะงัน อ.เกาะสมุย จ.สุราษฎร์ธานี","Val1Year":"            130,000.00 "},{"Zone":"10","Branch":"พังงา","Val3Year":"","VolIG":"24","EndDate":"26/10/2569","Customer":"สำนักสรรพากรพื้นที่จังหวัดพังงา","ContractId":"คุณกัญญารัตน์ 098-069-1755","VolIC":"","StartDate":"27/10/2568","Address":"57/2 หมู่ 3 ตำบลถ้ำน้ำผุด อำเภอเมืองพังงา จังหวัดพังงา","Val1Year":"              40,000.00 "},{"Zone":"10","Branch":"พังงา","Val3Year":"","VolIG":"18","EndDate":"28/07/2569","Customer":"ศูนย์ส่งเสริมการเรียนรู้ระดับอำเภอตะกั่วป่า","ContractId":"คุณขนิษฐา 085-796-7505","VolIC":"","StartDate":"29/07/2568","Address":"ถนนศรีเมือง ตำบลตะกั่วป่า อำเภอตะกั่วป่า จังหวัดพังงา","Val1Year":"              20,000.00 "},{"Zone":"11","Branch":"ภูเก็ต","Val3Year":"","VolIG":"48","EndDate":"24/11/2025","Customer":"โรงเรียนเฉลิมพระเกียรติสมเด็จพระศรีนครินทร์ ภูเก็ต","ContractId":"","VolIC":"","StartDate":"25/11/2024","Address":"","Val1Year":"              50,000.00 "},{"Zone":"11","Branch":"หาดใหญ่","Val3Year":"","VolIG":"234","EndDate":"30/09/2024","Customer":"อุทยานวิทยาศาสตร์ มหาวิทยาลัยสงขลานครินทร์","ContractId":"087-6323832","VolIC":"","StartDate":"10/2/2023","Address":"อาคารอำนวยการอุทยานวิทยาศาสตร์ภาคใต้ (จังหวัดสงขลา) มหาวิทยาลัยสงขลานครินทร์ วิทยาเขตหาดใหญ่ส่วนขยาย หมู่ที่ 6 ต.ทุ่งใหญ่ อ.หาดใหญ่ จ.สงขลา 90110","Val1Year":"            225,000.00 "},{"Zone":"10","Branch":"สุราษฎร์ธานี","Val3Year":"","VolIG":"128","EndDate":"16/6/2026","Customer":"คณะครุศาสตร์ มหาวิทยาลัยราชภัฎสุราษฎร์ธานี","ContractId":"095-2572455","VolIC":"","StartDate":"17/6/2025","Address":"272 หมู่ที่ 9  ตำบลขุนทะเล อำเภอเมืองสุราษฎร์ธานี  จังหวัดสุราษฎร์ธานี 84100","Val1Year":"            185,200.00 "},{"Zone":"10","Branch":"สุราษฎร์ธานี","Val3Year":"","VolIG":"66","EndDate":"19/2/2025","Customer":"โรงพยาบาลขนอม","ContractId":"084-8408989","VolIC":"","StartDate":"20/2/2024","Address":"91 หมู่ 3 ตำบลขนอม อำเภอขอม จังหวัดนครศรีธรรมราช 80210","Val1Year":"              99,200.00 "},{"Zone":"12","Branch":"ชุมพร","Val3Year":"","VolIG":"2","EndDate":"17/9/69","Customer":"โรงเรียนวัดประสาทนิกร","ContractId":"085-4902622","VolIC":"","StartDate":"18/9/68","Address":"70/1 ถ.เขาเงิน  ต.หลังสวน  อ.หลังสวน จ.ชุมพร 86110","Val1Year":"              16,355.14 "},{"Zone":"12","Branch":"ชุมพร","Val3Year":"              49,532.71 ","VolIG":"20","EndDate":"28/10/71","Customer":"โรงเรียนนิรมลชุมพร","ContractId":"083-9689897","VolIC":"","StartDate":"29/10/68","Address":"234 หมู่ 9 ตำบลตากแดด อำเภอเมือง จังหวัดชุมพร 86000","Val1Year":""},{"Zone":"12","Branch":"ชุมพร","Val3Year":"            205,607.48 ","VolIG":"59","EndDate":"26/2/70","Customer":"โรงพยาบาลหลังสวน","ContractId":"084-9951635","VolIC":"","StartDate":"27/2/67","Address":"82 หมู่ 5 ถนนเพชรเกษม ตำบลวังตะกอ อำเภอหลังสวน จังหวัดชุมพร 86110","Val1Year":""},{"Zone":"12","Branch":"นครศรีธรรมราช","Val3Year":"            147,200.00 ","VolIG":"46","EndDate":"30/9/70","Customer":"โรงพยาบาลสมเด็จพระยุพราชฉวาง(อาคาร POD 3 ชั้น)","ContractId":"089-8759565","VolIC":"","StartDate":"1/10/67","Address":"20 หมู่ 8  อ.ฉวาง จ.นครศร๊ธรรมราช","Val1Year":""},{"Zone":"12","Branch":"นครศรีธรรมราช","Val3Year":"","VolIG":"11","EndDate":"26/03/69.","Customer":"รพสต.เฉลิมพระเกียรติวัดสวนขัน","ContractId":"099-8799597","VolIC":"","StartDate":"27/03/68.","Address":"ม.1 ต.สวนขัน อ.ช้างกลาง จ.นครศรีธรรมราช","Val1Year":"              20,560.75 "},{"Zone":"12","Branch":"ตรัง","Val3Year":"","VolIG":"53","EndDate":"6/1/2026","Customer":"โรงพยาบาลย่านตาขาว","ContractId":"คุณเพียงพิศ 075-281448-9","VolIC":"","StartDate":"6/1/2025","Address":"293 ม.1 ถ.ตรัง-ปะเหลียน ต.ย่านตาขาว อ.ย่านตาขาว จ.ตรัง 92140","Val1Year":"              71,495.33 "},{"Zone":"12","Branch":"ตรัง","Val3Year":"","VolIG":"26","EndDate":"14/5/026","Customer":"โรงเรียนตรังวิทยา","ContractId":"คุณอนุชา 075-218188/099-7797993","VolIC":"","StartDate":"15/5/2025","Address":"7/1 ม.7 ถ.ตรัง-พัทลุง ต.บ้านโพธิ์ อ.เมือง จ.ตรัง 92000","Val1Year":"              28,037.38 "},{"Zone":"12","Branch":"ตรัง","Val3Year":"","VolIG":"42","EndDate":"2/7/2026","Customer":"โรงพยาบาลป่าบอน","ContractId":"คุณสุชาติวิทยา 074-841600","VolIC":"","StartDate":"3/7/2025","Address":"86 ม.7 ต.วังใหม่ อ.ป่าบอน จ.พัทลุง 93170","Val1Year":"              56,074.77 "},{"Zone":"12","Branch":"ระนอง","Val3Year":"","VolIG":"13","EndDate":"20/3/2026","Customer":"นายด่านศุลกากรระนอง","ContractId":"คุณนงลักษณ์ 089-771-7221","VolIC":"","StartDate":"21/3/2025","Address":"บ้านพักด่านศุลกากรกระนอง ถ.เฉลิมพระเกียรติ ต.เขานิเวศน์ อ.เมอืง จ.ระนอง 85000","Val1Year":"              18,691.59 "},{"Zone":"12","Branch":"ระนอง","Val3Year":"","VolIG":"15","EndDate":"22/9/2026","Customer":"สำนักงานข่าวกรองแห่งชาติ","ContractId":"คุณตุลย์ 063-265-3845","VolIC":"","StartDate":"23/9/2025","Address":"333 ม.1 ตำบลบางริ้น อำเภอเมือง จังหวัดระนอง 85000","Val1Year":"              26,750.00 "}];
+
+        const rawDataMay26 = [{"Zone": "1", "Branch": "พุทธมณฑล", "Val3Year": "", "VolIG": "274", "EndDate": "16/10/2026", "Customer": "สถาบันกัลยาณ์ราชนครินทร์", "ContractId": "CT25-0019573", "VolIC": "15", "StartDate": "17/10/2025", "Address": "เลขทื่ 23 หมู่ 8  ถนนพุทธมณฑลสาย 4  แขวงทวีวัฒนา  เขตทวีวัฒนา  กรุงเทพ", "Val1Year": "315,650.00"}, {"Zone": "1", "Branch": "พุทธมณฑล", "Val3Year": "", "VolIG": "1", "EndDate": "10/12/2026", "Customer": "สำนักงานธนานุเคราะห์โดยสถานธนานุเคราะห์ 3", "ContractId": "CT25-0030045", "VolIC": "3", "StartDate": "11/12/2025", "Address": "เลขที่ 322  ถนนอินทรพิทักษ์  แขวงหิรัญรูจี  เขตธนบุรี  กีุงเทพ", "Val1Year": "19,795.00"}, {"Zone": "1", "Branch": "พุทธมณฑล", "Val3Year": "", "VolIG": "", "EndDate": "30/9/2026", "Customer": "คณะแพทย์ศาสตร์ศิริราชพยาบาล มหาวิทยาลัยมหิดล", "ContractId": "CT26-0013247", "VolIC": "107", "StartDate": "1/4/2026", "Address": "เลขที่ 2 ถนนวังหลัง  แขวงศริราช  เขตบางกอกน้อย กรุงเทพ", "Val1Year": "90,000.00"}, {"Zone": "1", "Branch": "นครปฐม", "Val3Year": "", "VolIG": "130", "EndDate": "30/9/2026", "Customer": "สำนักงานอัยการภาค  7", "ContractId": "CT25-0027727", "VolIC": "50", "StartDate": "1/10/2025", "Address": "สำนักงานอัยการภาค7   ถนนสมบูรณ์  ต.หน้าเมือง  อ.เมือง  จงราชบุรี", "Val1Year": "215,000.00"}, {"Zone": "1", "Branch": "นครปฐม", "Val3Year": "", "VolIG": "45", "EndDate": "20/10/2026", "Customer": "มหาวิทยาลัยมหิดล (คณะเทคนิคการแพทย์)", "ContractId": "CT25-0028074", "VolIC": "24", "StartDate": "21/10/2025", "Address": "เลขที่ 999 ถนนพุทธมณฑลสาย 4  ต.ศาลายา  อ.พุทธมณฑล  จ.นครปฐม", "Val1Year": "52,545.29"}, {"Zone": "1", "Branch": "หัวหิน", "Val3Year": "", "VolIG": "18", "EndDate": "31/12/2026", "Customer": "โครงการชั่งหัวมัน  ตามพระราชดำริ", "ContractId": "CT26-0001496", "VolIC": "", "StartDate": "1/1/2026", "Address": "เลขที่ 1 หมู่ 5  ต.เขากระปุก  อ.ท่ายาง  จ.เพชรบุรี", "Val1Year": "23,540.00"}, {"Zone": "2", "Branch": "ปทุมวัน", "Val3Year": "", "VolIG": "73", "EndDate": "30/6/2026", "Customer": "Jones Lang Lasalle Management Ltd.(Head office)", "ContractId": "CT25-0023246", "VolIC": "", "StartDate": "1/8/2025", "Address": "เลขที่ 181  ถน  เขตปทุมวัน  กรุงเทพนวิทยุ  แขวงลุมพินี", "Val1Year": "137,316.71"}, {"Zone": "2", "Branch": "ปทุมวัน", "Val3Year": "", "VolIG": "15", "EndDate": "23/12/2026", "Customer": "สำนักงานทะเบียน จุฬาลงกรณ์มหาวิทยาลัย", "ContractId": "CT25-0025190", "VolIC": "", "StartDate": "24/12/2025", "Address": "เลขที่ 254 ถนนพญาไท  แขวงวังใหม่  เขตปทุมวัน  กรุงเทพ", "Val1Year": "35,096.00"}, {"Zone": "2", "Branch": "นนทบุรี", "Val3Year": "", "VolIG": "32", "EndDate": "9/10/2026", "Customer": "สถาบันบัณฑิตศึกษาจุฬาภรณ์", "ContractId": "CT25-0020676", "VolIC": "", "StartDate": "10/10/2025", "Address": "เลขที่ 54  ถนนกำแพงเพชร 6  แขวงตลาดบางเขน  เขตหลักสี่  กรุงเทพ", "Val1Year": "36,380.00"}, {"Zone": "3", "Branch": "ปทุมธานี", "Val3Year": "", "VolIG": "145", "EndDate": "30/9/2026", "Customer": "โรงเรียนสาธิตแห่งมหาวิทยาลัยธรรมศาสตร์", "ContractId": "CT25-0019918", "VolIC": "", "StartDate": "1/10/2002", "Address": "99  ม.18  ถ.พหลโยธิน  ต.คลองหนึ่ง  อ.คลองหลวง  จ.ปทุมธานี", "Val1Year": "179,974.00"}, {"Zone": "3", "Branch": "อยุธยา", "Val3Year": "", "VolIG": "23", "EndDate": "30/9/2026", "Customer": "มหาวิทยาลัยมหาจุฬาลงกรณราชวิทยาลัย", "ContractId": "CT25-0024806", "VolIC": "30", "StartDate": "1/10/2025", "Address": "79  ม.1  ต.ลำไทร  อ.วังน้อย  จ.พระนครศรีอยุธยา", "Val1Year": "73,958.40"}];
+
+        const dataByMonth = { 'NOV.25': rawDataNov25, 'MAY.26': rawDataMay26 };
+        let currentMonth = 'NOV.25';
+
+        // ---------------- UTILS ----------------
+        const parseMoney = (str) => {
+            if (!str) return 0;
+            const clean = str.toString().replace(/,/g, '').trim();
+            return parseFloat(clean) || 0;
+        };
+        const parseNum = (str) => {
+            if (!str) return 0;
+            const clean = str.toString().replace(/,/g, '').trim();
+            return parseInt(clean) || 0;
+        };
+        const formatMoney = (num) => {
+            return '฿' + num.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        };
+        const formatDate = (str) => {
+            if (!str) return "-";
+            return str; // Keep as is for now
+        };
+
+        // ---------------- PROCESS DATA ----------------
+        function buildProcessed(month) {
+            return dataByMonth[month].map(item => {
+                const v1 = parseMoney(item.Val1Year);
+                const v3 = parseMoney(item.Val3Year);
+                return {
+                    ...item,
+                    _val1: v1,
+                    _val3: v3,
+                    _totalVal: v1 + v3,
+                    _volIG: parseNum(item.VolIG),
+                    _volIC: parseNum(item.VolIC)
+                };
+            });
+        }
+
+        let processedData = buildProcessed(currentMonth);
+        let distinctZones = [];
+        let distinctBranches = [];
+
+        // Union of branches across ALL months, used for the (month-independent) comparison selects
+        const allMonths = Object.keys(dataByMonth);
+        const distinctBranchesAll = [...new Set(
+            allMonths.flatMap(m => dataByMonth[m].map(d => d.Branch))
+        )].sort();
+
+        // Partial-data note per month (shown as a banner). Empty string = no banner.
+        const monthNotes = {
+            'NOV.25': '',
+            'MAY.26': 'ข้อมูลเดือน MAY.26 ยังบันทึกไม่ครบทุกเขต (พร้อมเฉพาะเขต 1-3 จำนวน 11 รายการ ต่อสัญญา/อัพเดท 9 ราย + ลูกค้าใหม่ 2 ราย) เขต 4-12 อยู่ระหว่างดำเนินการต่อสัญญา'
+        };
+
+        function populateSelect(selectEl, values, placeholderText) {
+            selectEl.innerHTML = '';
+            const optAll = document.createElement('option');
+            optAll.value = 'all';
+            optAll.innerText = placeholderText;
+            selectEl.appendChild(optAll);
+            values.forEach(v => {
+                const opt = document.createElement('option');
+                opt.value = v;
+                opt.innerText = v;
+                selectEl.appendChild(opt);
+            });
+        }
+
+        function populateCompareSelect(selectEl, values) {
+            const current = selectEl.value;
+            selectEl.innerHTML = '<option value="">-- เลือกสาขา --</option>';
+            values.forEach(v => {
+                const opt = document.createElement('option');
+                opt.value = v;
+                opt.innerText = v;
+                selectEl.appendChild(opt);
+            });
+            if (values.includes(current)) selectEl.value = current;
+        }
+
+        function refreshFilterOptions() {
+            distinctZones = [...new Set(processedData.map(d => d.Zone))].sort((a,b) => parseInt(a)-parseInt(b));
+            distinctBranches = [...new Set(processedData.map(d => d.Branch))].sort();
+
+            populateSelect(document.getElementById('filterZone'), distinctZones, 'ทั้งหมด (All Zones)');
+            populateSelect(document.getElementById('filterBranch'), distinctBranches, 'ทั้งหมด (All Branches)');
+        }
+
+        // Comparison selects list ALL branches from ALL months (month picked independently per side)
+        function initCompareSelects() {
+            populateCompareSelect(document.getElementById('compare1'), distinctBranchesAll);
+            populateCompareSelect(document.getElementById('compare2'), distinctBranchesAll);
+        }
+
+        function switchMonth(month) {
+            currentMonth = month;
+            processedData = buildProcessed(currentMonth);
+            refreshFilterOptions();
+
+            const noteEl = document.getElementById('monthNote');
+            const noteTextEl = noteEl.querySelector('span');
+            const noteText = monthNotes[month] || '';
+            if (noteText) {
+                noteTextEl.innerText = noteText;
+                noteEl.classList.remove('hidden');
+            } else {
+                noteEl.classList.add('hidden');
+            }
+
+            updateDashboard(processedData);
+        }
+
+        // ---------------- INIT UI ----------------
+        window.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('currentDate').innerText = new Date().toLocaleDateString('th-TH');
+            document.getElementById('filterMonth').value = currentMonth;
+
+            refreshFilterOptions();
+            initCompareSelects();
+
+            // Render Initial
+            updateDashboard(processedData);
+            renderComparison();
+        });
+
+        // ---------------- NAVIGATION ----------------
+        function switchTab(tab) {
+            // 1. Hide/Show Views
+            ['overview', 'database', 'comparison'].forEach(t => {
+                document.getElementById('view-'+t).classList.add('hidden');
+            });
+            document.getElementById('view-'+tab).classList.remove('hidden');
+
+            // 2. Update Sidebar Buttons
+            const navItems = {
+                'overview': document.getElementById('nav-overview'),
+                'database': document.getElementById('nav-database'),
+                'comparison': document.getElementById('nav-comparison')
+            };
+
+            // Reset all
+            Object.values(navItems).forEach(el => {
+                el.className = 'flex items-center space-x-3 px-4 py-3 hover:bg-slate-800 rounded-lg transition-colors text-slate-300 hover:text-white cursor-pointer';
+            });
+
+            // Activate current
+            if(navItems[tab]) {
+                navItems[tab].className = 'flex items-center space-x-3 px-4 py-3 bg-blue-600 rounded-lg shadow-lg text-white cursor-pointer'; // Active style
+            }
+        }
+
+        // ---------------- FILTERS ----------------
+        function applyFilters() {
+            const z = document.getElementById('filterZone').value;
+            const b = document.getElementById('filterBranch').value;
+            
+            let filtered = processedData;
+            if (z !== 'all') filtered = filtered.filter(d => d.Zone === z);
+            if (b !== 'all') filtered = filtered.filter(d => d.Branch === b);
+            
+            updateDashboard(filtered);
+        }
+        function resetFilters() {
+            document.getElementById('filterZone').value = 'all';
+            document.getElementById('filterBranch').value = 'all';
+            updateDashboard(processedData);
+        }
+
+        // ---------------- DASHBOARD LOGIC ----------------
+        let barChartInstance = null;
+        let pieChartInstance = null;
+
+        function updateDashboard(data) {
+            // 1. KPI
+            const totalClients = data.length;
+            const totalVal = data.reduce((s, i) => s + i._totalVal, 0);
+            const totalIG = data.reduce((s, i) => s + i._volIG, 0);
+            const totalIC = data.reduce((s, i) => s + i._volIC, 0);
+
+            document.getElementById('kpi-total-clients').innerText = totalClients.toLocaleString();
+            document.getElementById('kpi-total-value').innerText = formatMoney(totalVal);
+            document.getElementById('kpi-total-ig').innerText = totalIG.toLocaleString();
+            document.getElementById('kpi-total-ic').innerText = totalIC.toLocaleString();
+
+            // 2. Charts
+            updateCharts(data, totalIG, totalIC);
+
+            // 3. Top Branches Table
+            updateTopBranches(data);
+
+            // 4. Full Database Table
+            updateFullTable(data);
+            
+            // 5. Comparison reset
+            // (Keep comparison existing selection if valid, or just let user re-select)
+        }
+
+        function updateCharts(data, totalIG, totalIC) {
+            // Zone Analysis
+            const zoneAgg = {};
+            data.forEach(d => {
+                if(!zoneAgg[d.Zone]) zoneAgg[d.Zone] = 0;
+                zoneAgg[d.Zone] += d._totalVal;
+            });
+            const labels = Object.keys(zoneAgg).sort((a,b) => parseInt(a)-parseInt(b));
+            const vals = labels.map(l => zoneAgg[l]);
+
+            const ctxBar = document.getElementById('chartZoneValue').getContext('2d');
+            if(barChartInstance) barChartInstance.destroy();
+            
+            barChartInstance = new Chart(ctxBar, {
+                type: 'bar',
+                data: {
+                    labels: labels.map(l => 'Zone '+l),
+                    datasets: [{
+                        label: 'Total Value (THB)',
+                        data: vals,
+                        backgroundColor: '#3b82f6',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+
+            // IG/IC Pie
+            const totalVol = totalIG + totalIC;
+            const pIG = totalVol ? Math.round((totalIG/totalVol)*100) : 0;
+            const pIC = totalVol ? Math.round((totalIC/totalVol)*100) : 0;
+
+            document.getElementById('ratio-ig-val').innerText = pIG + '%';
+            document.getElementById('ratio-ic-val').innerText = pIC + '%';
+
+            const ctxPie = document.getElementById('chartStationRatio').getContext('2d');
+            if(pieChartInstance) pieChartInstance.destroy();
+
+            pieChartInstance = new Chart(ctxPie, {
+                type: 'doughnut',
+                data: {
+                    labels: ['IG (Soil)', 'IC (Concrete)'],
+                    datasets: [{
+                        data: [totalIG, totalIC],
+                        backgroundColor: ['#f59e0b', '#8b5cf6'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    cutout: '70%',
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        function updateTopBranches(data) {
+            const branchAgg = {};
+            data.forEach(d => {
+                if(!branchAgg[d.Branch]) branchAgg[d.Branch] = { val:0, count:0, zone: d.Zone };
+                branchAgg[d.Branch].val += d._totalVal;
+                branchAgg[d.Branch].count += 1;
+            });
+            
+            const sorted = Object.entries(branchAgg)
+                .sort(([,a], [,b]) => b.val - a.val)
+                .slice(0, 5);
+            
+            const tbody = document.getElementById('top-branches-tbody');
+            tbody.innerHTML = '';
+            sorted.forEach(([name, metrics], idx) => {
+                const tr = document.createElement('tr');
+                tr.className = "bg-white border-b hover:bg-gray-50";
+                tr.innerHTML = `
+                    <td class="px-6 py-4 font-medium text-gray-900">${idx+1}. ${name}</td>
+                    <td class="px-6 py-4">Zone ${metrics.zone}</td>
+                    <td class="px-6 py-4 text-right">${metrics.count}</td>
+                    <td class="px-6 py-4 text-right font-bold text-emerald-600">${formatMoney(metrics.val)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function updateFullTable(data) {
+            const tbody = document.getElementById('full-database-tbody');
+            tbody.innerHTML = '';
+            
+            // Limit to 100 for performance if massive, but 50 is fine
+            data.forEach(d => {
+                const tr = document.createElement('tr');
+                tr.className = "bg-white border-b hover:bg-gray-50 transition-colors";
+                tr.innerHTML = `
+                    <td class="px-4 py-3 font-bold text-center text-blue-600">${d.Zone}</td>
+                    <td class="px-4 py-3">${d.Branch}</td>
+                    <td class="px-4 py-3 font-medium text-gray-900 flex items-center gap-2">
+                        <i class="fas fa-building text-gray-300"></i> ${d.Customer}
+                    </td>
+                    <td class="px-4 py-3 text-center bg-amber-50 text-amber-700 font-bold">${d._volIG || '-'}</td>
+                    <td class="px-4 py-3 text-center bg-violet-50 text-violet-700 font-bold">${d._volIC || '-'}</td>
+                    <td class="px-4 py-3 text-right text-gray-600">${d.Val1Year || '-'}</td>
+                    <td class="px-4 py-3 text-right text-gray-600">${d.Val3Year || '-'}</td>
+                    <td class="px-4 py-3 text-center text-xs text-gray-400">
+                        ${d.StartDate} - ${d.EndDate}
+                    </td>
+                    <td class="px-4 py-3 text-center">
+                         <button class="text-blue-500 hover:text-blue-800" onclick="alert('${d.Address || 'No Address'}')">
+                            <i class="fas fa-info-circle"></i>
+                         </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            document.getElementById('result-count').innerText = `Displaying ${data.length} records`;
+        }
+        
+        // ---------------- SORTING & SEARCH ----------------
+        // Simple search
+        function searchTable() {
+            const term = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = processedData.filter(d => 
+                d.Customer.toLowerCase().includes(term) || 
+                d.Branch.toLowerCase().includes(term) ||
+                (d.ContractId && d.ContractId.toLowerCase().includes(term))
+            );
+            updateFullTable(filtered);
+        }
+        
+        // ---------------- COMPARISON (cross-month capable) ----------------
+        function formatDelta(num, isMoney) {
+            const sign = num > 0 ? '+' : (num < 0 ? '' : '±');
+            const text = isMoney ? formatMoney(Math.abs(num)) : Math.abs(num).toLocaleString();
+            const display = (num === 0) ? (isMoney ? formatMoney(0) : '0') : sign + text;
+            const colorClass = num > 0 ? 'text-emerald-600' : (num < 0 ? 'text-red-500' : 'text-gray-500');
+            return { display, colorClass };
+        }
+
+        function renderComparison() {
+            const month1 = document.getElementById('compare1Month').value;
+            const month2 = document.getElementById('compare2Month').value;
+            const b1 = document.getElementById('compare1').value;
+            const b2 = document.getElementById('compare2').value;
+
+            const getStats = (month, branchName) => {
+                const subset = buildProcessed(month).filter(d => d.Branch === branchName);
+                return {
+                    subset,
+                    count: subset.length,
+                    val: subset.reduce((s,i)=>s+i._totalVal,0),
+                    ig: subset.reduce((s,i)=>s+i._volIG,0),
+                    ic: subset.reduce((s,i)=>s+i._volIC,0)
+                };
+            };
+
+            const updateSide = (month, branchName, idPrefix, containerId) => {
+                const container = document.getElementById(containerId);
+                const listContainer = document.getElementById(idPrefix+'-list');
+                
+                if(!branchName) {
+                    container.classList.add('opacity-50');
+                    if(listContainer) listContainer.innerHTML = '';
+                    return null;
+                }
+                container.classList.remove('opacity-50');
+                
+                const stats = getStats(month, branchName);
+                
+                document.getElementById(idPrefix+'-clients').innerText = stats.count;
+                document.getElementById(idPrefix+'-value').innerText = formatMoney(stats.val);
+                document.getElementById(idPrefix+'-ig').innerText = stats.ig;
+                document.getElementById(idPrefix+'-ic').innerText = stats.ic;
+
+                // Render List
+                if(listContainer) {
+                    listContainer.innerHTML = '';
+                    if (stats.subset.length === 0) {
+                        listContainer.innerHTML = '<p class="text-xs text-gray-400 italic">ไม่มีข้อมูลสาขานี้ในเดือน ' + month + '</p>';
+                    }
+                    stats.subset.forEach(item => {
+                        const el = document.createElement('div');
+                        el.className = 'bg-white p-3 rounded-lg shadow-sm border-l-4 border-blue-400';
+                        el.innerHTML = `
+                            <div class="flex justify-between items-start">
+                                <h5 class="font-bold text-sm text-gray-800 break-words w-2/3">${item.Customer}</h5>
+                                <span class="text-xs font-bold text-emerald-600 whitespace-nowrap">${formatMoney(item._totalVal)}</span>
+                            </div>
+                            <div class="flex gap-3 mt-2 text-xs text-gray-500">
+                                <span><i class="fas fa-layer-group text-amber-500"></i> IG: ${item._volIG || 0}</span>
+                                <span><i class="fas fa-cubes text-violet-500"></i> IC: ${item._volIC || 0}</span>
+                            </div>
+                        `;
+                        listContainer.appendChild(el);
+                    });
+                }
+
+                return stats;
+            }
+            
+            const stats1 = updateSide(month1, b1, 'c1', 'compare1-stats');
+            const stats2 = updateSide(month2, b2, 'c2', 'compare2-stats');
+
+            // Delta panel: only when both sides have a branch selected
+            const deltaPanel = document.getElementById('compare-delta');
+            if (stats1 && stats2) {
+                deltaPanel.classList.remove('hidden');
+
+                const dClients = formatDelta(stats2.count - stats1.count, false);
+                const dValue = formatDelta(stats2.val - stats1.val, true);
+                const dIG = formatDelta(stats2.ig - stats1.ig, false);
+                const dIC = formatDelta(stats2.ic - stats1.ic, false);
+
+                const set = (id, d) => {
+                    const el = document.getElementById(id);
+                    el.innerText = d.display;
+                    el.className = 'text-xl font-bold ' + d.colorClass;
+                };
+                set('delta-clients', dClients);
+                set('delta-value', dValue);
+                set('delta-ig', dIG);
+                set('delta-ic', dIC);
+            } else {
+                deltaPanel.classList.add('hidden');
+            }
+        }
+
+    </script>
+</body>
+</html>
