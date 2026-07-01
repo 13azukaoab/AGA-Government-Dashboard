@@ -168,6 +168,38 @@
                     </div>
                 </div>
 
+                <!-- RENEWAL ALERT -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                        <h3 class="text-lg font-bold text-gray-800 border-l-4 border-red-500 pl-3">แจ้งเตือนสัญญาใกล้หมดอายุ (Renewal Alert)</h3>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-gray-500">แจ้งเตือนล่วงหน้า:</span>
+                            <select id="renewalThreshold" onchange="updateDashboard(processedData)" class="text-sm p-2 bg-white border border-gray-300 rounded-lg shadow-sm">
+                                <option value="30">30 วัน</option>
+                                <option value="60" selected>60 วัน</option>
+                                <option value="90">90 วัน</option>
+                                <option value="180">180 วัน</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead class="text-xs text-gray-500 uppercase bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3">เขต</th>
+                                    <th class="px-4 py-3">สาขา</th>
+                                    <th class="px-4 py-3">ลูกค้า</th>
+                                    <th class="px-4 py-3">วันหมดสัญญา</th>
+                                    <th class="px-4 py-3 text-right">เหลือ (วัน)</th>
+                                    <th class="px-4 py-3 text-center">สถานะ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="renewal-alert-tbody"></tbody>
+                        </table>
+                        <p id="renewal-alert-empty" class="text-sm text-gray-400 italic p-4 hidden">ไม่มีสัญญาใกล้หมดอายุในช่วงที่เลือก (เดือน + ตัวกรองปัจจุบัน)</p>
+                    </div>
+                </div>
+
                 <!-- Charts Section -->
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <!-- Main Bar Chart -->
@@ -308,6 +340,60 @@
                             <p class="text-xs text-gray-500">IC</p>
                             <h4 class="text-xl font-bold" id="overall-delta-ic">-</h4>
                             <p class="text-[11px] text-gray-400 mt-1"><span id="overall-a-ic">-</span> &rarr; <span id="overall-b-ic">-</span></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STATUS: NEW / RENEWED / PENDING -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <h3 class="text-lg font-bold text-gray-800 mb-1 border-l-4 border-emerald-500 pl-3">สถานะลูกค้า: ใหม่ / ต่อสัญญาแล้ว / ยังไม่ต่อสัญญา</h3>
+                    <p class="text-xs text-gray-400 mb-4 pl-3">เทียบ <span id="status-month-label">-</span> เฉพาะเขตที่มีข้อมูลครบทั้งสองเดือน (ใช้เดือนจากการ์ด "เปรียบเทียบภาพรวมทั้งหมด" ด้านบน) &bull; จับคู่ชื่อลูกค้าแบบใกล้เคียงเผื่อสะกดต่างเล็กน้อย</p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <h4 class="font-bold text-emerald-700 text-sm">ลูกค้าใหม่</h4>
+                                <span class="text-xs font-bold bg-emerald-100 text-emerald-700 rounded-full px-2 py-0.5" id="status-new-count">0</span>
+                            </div>
+                            <div id="status-new-list" class="space-y-2 max-h-72 overflow-y-auto pr-1"></div>
+                        </div>
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <h4 class="font-bold text-blue-700 text-sm">ต่อสัญญาแล้ว</h4>
+                                <span class="text-xs font-bold bg-blue-100 text-blue-700 rounded-full px-2 py-0.5" id="status-renewed-count">0</span>
+                            </div>
+                            <div id="status-renewed-list" class="space-y-2 max-h-72 overflow-y-auto pr-1"></div>
+                        </div>
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <h4 class="font-bold text-red-700 text-sm">ยังไม่ต่อสัญญา</h4>
+                                <span class="text-xs font-bold bg-red-100 text-red-700 rounded-full px-2 py-0.5" id="status-pending-count">0</span>
+                            </div>
+                            <div id="status-pending-list" class="space-y-2 max-h-72 overflow-y-auto pr-1"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TOP MOVERS -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <div class="flex flex-wrap items-center justify-between gap-3 mb-1">
+                        <h3 class="text-lg font-bold text-gray-800 border-l-4 border-amber-500 pl-3">Top Movers</h3>
+                        <div class="flex items-center gap-2 pr-1">
+                            <span class="text-xs text-gray-500">ระดับ:</span>
+                            <select id="moversLevel" onchange="renderOverallComparison()" class="text-sm p-2 bg-white border border-gray-300 rounded-lg shadow-sm">
+                                <option value="Branch">สาขา</option>
+                                <option value="Zone">เขต</option>
+                            </select>
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-400 mb-4 pl-3">มูลค่าเปลี่ยนแปลงมากสุด (เฉพาะเขตที่มีข้อมูลครบทั้งสองเดือน)</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="font-bold text-emerald-700 text-sm mb-2"><i class="fas fa-arrow-trend-up"></i> เติบโตสูงสุด</h4>
+                            <div id="movers-gainers" class="space-y-2"></div>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-red-700 text-sm mb-2"><i class="fas fa-arrow-trend-down"></i> ลดลงสูงสุด</h4>
+                            <div id="movers-decliners" class="space-y-2"></div>
                         </div>
                     </div>
                 </div>
@@ -457,6 +543,55 @@
             if (!str) return "-";
             return str; // Keep as is for now
         };
+
+        // Robust date parser: handles d/m/yyyy (Gregorian), d/m/yyyy Buddhist (>2400),
+        // 2-digit Buddhist short year ("69" -> 2569 -> 2026), 3-digit typo year ("026" -> 2026),
+        // and stray trailing characters (e.g. "26/03/69.")
+        function parseThaiDate(str) {
+            if (!str) return null;
+            const clean = str.toString().trim().replace(/[^\d/]+$/, '');
+            const parts = clean.split('/');
+            if (parts.length !== 3) return null;
+            const d = parseInt(parts[0], 10);
+            const m = parseInt(parts[1], 10);
+            const yStr = parts[2];
+            let y;
+            if (yStr.length <= 2) {
+                y = 2500 + parseInt(yStr, 10) - 543; // 2-digit Buddhist short year
+            } else if (yStr.length === 3) {
+                y = 2000 + (parseInt(yStr, 10) % 100); // typo year missing leading digit
+            } else {
+                y = parseInt(yStr, 10);
+                if (y > 2400) y = y - 543; // 4-digit Buddhist year
+            }
+            if (isNaN(d) || isNaN(m) || isNaN(y)) return null;
+            const dt = new Date(y, m - 1, d);
+            if (isNaN(dt.getTime())) return null;
+            return dt;
+        }
+
+        function normalizeName(s) {
+            return (s || '').toString().trim().replace(/\s+/g, ' ');
+        }
+
+        function levenshtein(a, b) {
+            const m = a.length, n = b.length;
+            const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+            for (let i = 0; i <= m; i++) dp[i][0] = i;
+            for (let j = 0; j <= n; j++) dp[0][j] = j;
+            for (let i = 1; i <= m; i++) {
+                for (let j = 1; j <= n; j++) {
+                    const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+                    dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost);
+                }
+            }
+            return dp[m][n];
+        }
+
+        function nameSimilarity(a, b) {
+            const dist = levenshtein(a, b);
+            return 1 - dist / Math.max(a.length, b.length, 1);
+        }
 
         // ---------------- PROCESS DATA ----------------
         function buildProcessed(month) {
@@ -646,9 +781,57 @@
 
             // 4. Full Database Table
             updateFullTable(data);
-            
-            // 5. Comparison reset
+
+            // 5. Renewal Alert
+            renderRenewalAlert(data);
+
+            // 6. Comparison reset
             // (Keep comparison existing selection if valid, or just let user re-select)
+        }
+
+        function renderRenewalAlert(data) {
+            const thresholdSel = document.getElementById('renewalThreshold');
+            const thresholdDays = parseInt(thresholdSel.value, 10);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const rows = data.map(d => {
+                const end = parseThaiDate(d.EndDate);
+                if (!end) return null;
+                const daysLeft = Math.round((end - today) / 86400000);
+                return { ...d, _daysLeft: daysLeft };
+            }).filter(r => r && r._daysLeft <= thresholdDays)
+              .sort((a, b) => a._daysLeft - b._daysLeft);
+
+            const tbody = document.getElementById('renewal-alert-tbody');
+            const emptyMsg = document.getElementById('renewal-alert-empty');
+            tbody.innerHTML = '';
+
+            if (rows.length === 0) {
+                emptyMsg.classList.remove('hidden');
+                return;
+            }
+            emptyMsg.classList.add('hidden');
+
+            rows.forEach(r => {
+                const tr = document.createElement('tr');
+                tr.className = 'bg-white border-b hover:bg-gray-50';
+                let badge, badgeClass;
+                if (r._daysLeft < 0) { badge = 'หมดอายุแล้ว'; badgeClass = 'bg-red-100 text-red-700'; }
+                else if (r._daysLeft <= 30) { badge = 'ด่วน'; badgeClass = 'bg-red-100 text-red-700'; }
+                else if (r._daysLeft <= 60) { badge = 'ใกล้ถึง'; badgeClass = 'bg-amber-100 text-amber-700'; }
+                else { badge = 'เฝ้าระวัง'; badgeClass = 'bg-blue-100 text-blue-700'; }
+
+                tr.innerHTML = `
+                    <td class="px-4 py-3 text-center font-bold text-blue-600">${r.Zone}</td>
+                    <td class="px-4 py-3">${r.Branch}</td>
+                    <td class="px-4 py-3 font-medium text-gray-900">${r.Customer}</td>
+                    <td class="px-4 py-3">${r.EndDate}</td>
+                    <td class="px-4 py-3 text-right font-bold ${r._daysLeft < 0 ? 'text-red-600' : ''}">${r._daysLeft}</td>
+                    <td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded-full text-xs font-bold ${badgeClass}">${badge}</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
         }
 
         function updateCharts(data, totalIG, totalIC) {
@@ -942,6 +1125,163 @@
             setDelta('overall-delta-value', b.val - a.val, true);
             setDelta('overall-delta-ig', b.ig - a.ig, false);
             setDelta('overall-delta-ic', b.ic - a.ic, false);
+
+            renderStatusDiff(monthA, monthB);
+            renderMovers(monthA, monthB);
+        }
+
+        // ---------------- STATUS DIFF (New / Renewed / Pending) ----------------
+        function computeStatusDiff(monthA, monthB) {
+            const dataA = buildProcessed(monthA);
+            const dataB = buildProcessed(monthB);
+            const zonesA = new Set(dataA.map(d => d.Zone));
+            const zonesB = new Set(dataB.map(d => d.Zone));
+            const commonZones = [...zonesA].filter(z => zonesB.has(z)).sort((a,b)=>parseInt(a)-parseInt(b));
+
+            const listA = dataA.filter(d => commonZones.includes(d.Zone));
+            const listB = dataB.filter(d => commonZones.includes(d.Zone));
+
+            const keyOf = d => normalizeName(d.Customer) + '|' + d.Branch;
+            const mapA = new Map(listA.map(d => [keyOf(d), d]));
+            const mapB = new Map(listB.map(d => [keyOf(d), d]));
+
+            let pendingKeys = [...mapA.keys()].filter(k => !mapB.has(k));
+            let newKeys = [...mapB.keys()].filter(k => !mapA.has(k));
+            const matchedKeys = [...mapA.keys()].filter(k => mapB.has(k));
+
+            const renewedItems = [];
+            matchedKeys.forEach(k => {
+                const a = mapA.get(k), b = mapB.get(k);
+                if (a.ContractId !== b.ContractId || a.StartDate !== b.StartDate || a.EndDate !== b.EndDate) {
+                    renewedItems.push(b);
+                }
+            });
+
+            // Fuzzy-pair remaining pending <-> new within same branch (catches minor name/spelling changes)
+            const fuzzyRenamedItems = [];
+            const usedNew = new Set();
+            pendingKeys = pendingKeys.filter(pk => {
+                const a = mapA.get(pk);
+                let best = null, bestScore = 0;
+                newKeys.forEach(nk => {
+                    if (usedNew.has(nk)) return;
+                    const b = mapB.get(nk);
+                    if (b.Branch !== a.Branch) return;
+                    const score = nameSimilarity(normalizeName(a.Customer), normalizeName(b.Customer));
+                    if (score > bestScore) { bestScore = score; best = nk; }
+                });
+                if (best && bestScore >= 0.6) {
+                    usedNew.add(best);
+                    fuzzyRenamedItems.push(mapB.get(best));
+                    return false;
+                }
+                return true;
+            });
+            newKeys = newKeys.filter(nk => !usedNew.has(nk));
+
+            return {
+                commonZones,
+                newItems: newKeys.map(k => mapB.get(k)),
+                renewedItems,
+                fuzzyRenamedItems,
+                pendingItems: pendingKeys.map(k => mapA.get(k))
+            };
+        }
+
+        function renderNameList(containerId, items, renderFn) {
+            const el = document.getElementById(containerId);
+            el.innerHTML = '';
+            if (items.length === 0) {
+                el.innerHTML = '<p class="text-xs text-gray-400 italic">- ไม่มี -</p>';
+                return;
+            }
+            items.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-xs';
+                div.innerHTML = renderFn(item);
+                el.appendChild(div);
+            });
+        }
+
+        function renderStatusDiff(monthA, monthB) {
+            const diff = computeStatusDiff(monthA, monthB);
+            document.getElementById('status-month-label').innerText = monthA + ' → ' + monthB;
+
+            document.getElementById('status-new-count').innerText = diff.newItems.length;
+            document.getElementById('status-renewed-count').innerText = diff.renewedItems.length + diff.fuzzyRenamedItems.length;
+            document.getElementById('status-pending-count').innerText = diff.pendingItems.length;
+
+            renderNameList('status-new-list', diff.newItems, item =>
+                `<div class="font-bold text-gray-800">${item.Customer}</div><div class="text-gray-500">${item.Branch} (เขต ${item.Zone}) &bull; ${formatMoney(item._totalVal)}</div>`
+            );
+
+            const renewedCombined = [
+                ...diff.renewedItems.map(b => ({ b, note: '' })),
+                ...diff.fuzzyRenamedItems.map(b => ({ b, note: ' <span class="text-gray-400">(ชื่ออาจสะกดต่างจากเดิมเล็กน้อย)</span>' }))
+            ];
+            renderNameList('status-renewed-list', renewedCombined, x =>
+                `<div class="font-bold text-gray-800">${x.b.Customer}${x.note}</div><div class="text-gray-500">${x.b.Branch} (เขต ${x.b.Zone}) &bull; สัญญา ${x.b.ContractId || '-'}</div>`
+            );
+
+            renderNameList('status-pending-list', diff.pendingItems, item =>
+                `<div class="font-bold text-gray-800">${item.Customer}</div><div class="text-gray-500">${item.Branch} (เขต ${item.Zone}) &bull; หมดสัญญา ${item.EndDate}</div>`
+            );
+        }
+
+        // ---------------- TOP MOVERS ----------------
+        function computeMovers(monthA, monthB, level) {
+            const dataA = buildProcessed(monthA);
+            const dataB = buildProcessed(monthB);
+            const zonesA = new Set(dataA.map(d => d.Zone));
+            const zonesB = new Set(dataB.map(d => d.Zone));
+            const commonZones = [...zonesA].filter(z => zonesB.has(z));
+            const fA = dataA.filter(d => commonZones.includes(d.Zone));
+            const fB = dataB.filter(d => commonZones.includes(d.Zone));
+
+            const field = level === 'Zone' ? 'Zone' : 'Branch';
+            const agg = (rows) => {
+                const m = {};
+                rows.forEach(d => {
+                    if (!m[d[field]]) m[d[field]] = { count: 0, val: 0 };
+                    m[d[field]].count += 1;
+                    m[d[field]].val += d._totalVal;
+                });
+                return m;
+            };
+            const aggA = agg(fA), aggB = agg(fB);
+            const keys = new Set([...Object.keys(aggA), ...Object.keys(aggB)]);
+            const rows = [...keys].map(k => {
+                const a = aggA[k] || { count: 0, val: 0 };
+                const b = aggB[k] || { count: 0, val: 0 };
+                return { name: k, deltaVal: b.val - a.val, deltaCount: b.count - a.count };
+            });
+            const gainers = rows.filter(r => r.deltaVal > 0).sort((x, y) => y.deltaVal - x.deltaVal).slice(0, 5);
+            const decliners = rows.filter(r => r.deltaVal < 0).sort((x, y) => x.deltaVal - y.deltaVal).slice(0, 5);
+            return { gainers, decliners };
+        }
+
+        function renderMovers(monthA, monthB) {
+            const level = document.getElementById('moversLevel').value;
+            const { gainers, decliners } = computeMovers(monthA, monthB, level);
+            const label = level === 'Zone' ? 'เขต ' : '';
+
+            const renderMoverList = (containerId, rows) => {
+                const el = document.getElementById(containerId);
+                el.innerHTML = '';
+                if (rows.length === 0) {
+                    el.innerHTML = '<p class="text-xs text-gray-400 italic">- ไม่มีข้อมูล -</p>';
+                    return;
+                }
+                rows.forEach(r => {
+                    const d = formatDelta(r.deltaVal, true);
+                    const div = document.createElement('div');
+                    div.className = 'flex justify-between items-center bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-sm';
+                    div.innerHTML = `<span class="font-medium text-gray-700">${label}${r.name}</span><span class="font-bold ${d.colorClass}">${d.display}</span>`;
+                    el.appendChild(div);
+                });
+            };
+            renderMoverList('movers-gainers', gainers);
+            renderMoverList('movers-decliners', decliners);
         }
 
     </script>
