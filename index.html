@@ -259,9 +259,71 @@
 
             <!-- VIEW: COMPARISON -->
             <div id="view-comparison" class="hidden space-y-6">
+
+                <!-- OVERALL (PORTFOLIO) COMPARISON -->
                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                    <h3 class="text-lg font-bold text-gray-800 mb-1 border-l-4 border-purple-500 pl-3">เปรียบเทียบ (Branch / Month Comparison)</h3>
-                    <p class="text-xs text-gray-400 mb-6 pl-3">เลือกเดือน + สาขาแต่ละฝั่งได้อิสระ เพื่อเทียบข้อมูลข้ามเดือนหรือข้ามสาขาก็ได้</p>
+                    <h3 class="text-lg font-bold text-gray-800 mb-1 border-l-4 border-blue-500 pl-3">เปรียบเทียบภาพรวมทั้งหมด (Overall Comparison)</h3>
+                    <p class="text-xs text-gray-400 mb-4 pl-3">เทียบยอดรวมทั้งพอร์ตระหว่าง 2 เดือน เพื่อดูว่าภาพรวมเปลี่ยนไปอย่างไร</p>
+
+                    <div class="flex flex-wrap items-end gap-4 mb-4 pl-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">เดือนก่อนหน้า (Base)</label>
+                            <select id="overallMonthA" onchange="renderOverallComparison()" class="p-2.5 bg-white border border-gray-300 rounded-lg shadow-sm">
+                                <option value="NOV.25" selected>NOV.25</option>
+                                <option value="MAY.26">MAY.26</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">เดือนล่าสุด (Latest)</label>
+                            <select id="overallMonthB" onchange="renderOverallComparison()" class="p-2.5 bg-white border border-gray-300 rounded-lg shadow-sm">
+                                <option value="NOV.25">NOV.25</option>
+                                <option value="MAY.26" selected>MAY.26</option>
+                            </select>
+                        </div>
+                        <div class="flex items-center gap-2 pb-2.5">
+                            <input type="checkbox" id="overallSameZoneOnly" checked onchange="renderOverallComparison()" class="w-4 h-4">
+                            <label for="overallSameZoneOnly" class="text-xs text-gray-600">เทียบเฉพาะเขตที่มีข้อมูลครบทั้งสองเดือน (แนะนำ)</label>
+                        </div>
+                    </div>
+
+                    <div id="overallCoverageNote" class="mb-4 pl-3 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3 hidden"></div>
+
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 pl-3">
+                        <div class="bg-slate-50 p-4 rounded-lg text-center border border-slate-200">
+                            <p class="text-xs text-gray-500">ลูกค้า (Clients)</p>
+                            <h4 class="text-xl font-bold" id="overall-delta-clients">-</h4>
+                            <p class="text-[11px] text-gray-400 mt-1"><span id="overall-a-clients">-</span> &rarr; <span id="overall-b-clients">-</span></p>
+                        </div>
+                        <div class="bg-slate-50 p-4 rounded-lg text-center border border-slate-200">
+                            <p class="text-xs text-gray-500">มูลค่า (Value)</p>
+                            <h4 class="text-xl font-bold" id="overall-delta-value">-</h4>
+                            <p class="text-[11px] text-gray-400 mt-1"><span id="overall-a-value">-</span> &rarr; <span id="overall-b-value">-</span></p>
+                        </div>
+                        <div class="bg-slate-50 p-4 rounded-lg text-center border border-slate-200">
+                            <p class="text-xs text-gray-500">IG</p>
+                            <h4 class="text-xl font-bold" id="overall-delta-ig">-</h4>
+                            <p class="text-[11px] text-gray-400 mt-1"><span id="overall-a-ig">-</span> &rarr; <span id="overall-b-ig">-</span></p>
+                        </div>
+                        <div class="bg-slate-50 p-4 rounded-lg text-center border border-slate-200">
+                            <p class="text-xs text-gray-500">IC</p>
+                            <h4 class="text-xl font-bold" id="overall-delta-ic">-</h4>
+                            <p class="text-[11px] text-gray-400 mt-1"><span id="overall-a-ic">-</span> &rarr; <span id="overall-b-ic">-</span></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <div class="flex flex-wrap items-center justify-between gap-3 mb-1">
+                        <h3 class="text-lg font-bold text-gray-800 border-l-4 border-purple-500 pl-3">เปรียบเทียบรายจุด (Branch / Zone / Month Comparison)</h3>
+                        <div class="flex items-center gap-2 pr-1">
+                            <span class="text-xs text-gray-500">เปรียบเทียบตาม:</span>
+                            <select id="compareLevel" onchange="switchCompareLevel(this.value)" class="text-sm p-2 bg-white border border-gray-300 rounded-lg shadow-sm">
+                                <option value="Branch">สาขา (Branch)</option>
+                                <option value="Zone">เขต (Zone)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-400 mb-6 pl-3">เลือกเดือน + สาขา/เขตแต่ละฝั่งได้อิสระ เพื่อเทียบข้อมูลข้ามเดือนหรือข้ามจุดก็ได้</p>
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <!-- Selection 1 -->
@@ -416,11 +478,16 @@
         let distinctZones = [];
         let distinctBranches = [];
 
-        // Union of branches across ALL months, used for the (month-independent) comparison selects
+        // Union of branches/zones across ALL months, used for the (month-independent) comparison selects
         const allMonths = Object.keys(dataByMonth);
         const distinctBranchesAll = [...new Set(
             allMonths.flatMap(m => dataByMonth[m].map(d => d.Branch))
         )].sort();
+        const distinctZonesAll = [...new Set(
+            allMonths.flatMap(m => dataByMonth[m].map(d => d.Zone))
+        )].sort((a,b) => parseInt(a)-parseInt(b));
+
+        let compareLevel = 'Branch'; // 'Branch' | 'Zone'
 
         // Partial-data note per month (shown as a banner). Empty string = no banner.
         const monthNotes = {
@@ -442,13 +509,17 @@
             });
         }
 
-        function populateCompareSelect(selectEl, values) {
+        function populateCompareSelect(selectEl, values, placeholderText) {
             const current = selectEl.value;
-            selectEl.innerHTML = '<option value="">-- เลือกสาขา --</option>';
+            selectEl.innerHTML = '';
+            const optPlaceholder = document.createElement('option');
+            optPlaceholder.value = '';
+            optPlaceholder.innerText = placeholderText || '-- เลือกสาขา --';
+            selectEl.appendChild(optPlaceholder);
             values.forEach(v => {
                 const opt = document.createElement('option');
                 opt.value = v;
-                opt.innerText = v;
+                opt.innerText = (placeholderText && placeholderText.includes('เขต')) ? ('เขต ' + v) : v;
                 selectEl.appendChild(opt);
             });
             if (values.includes(current)) selectEl.value = current;
@@ -462,10 +533,18 @@
             populateSelect(document.getElementById('filterBranch'), distinctBranches, 'ทั้งหมด (All Branches)');
         }
 
-        // Comparison selects list ALL branches from ALL months (month picked independently per side)
+        // Comparison selects list ALL branches (or zones) from ALL months (month picked independently per side)
         function initCompareSelects() {
-            populateCompareSelect(document.getElementById('compare1'), distinctBranchesAll);
-            populateCompareSelect(document.getElementById('compare2'), distinctBranchesAll);
+            const values = compareLevel === 'Zone' ? distinctZonesAll : distinctBranchesAll;
+            const placeholder = compareLevel === 'Zone' ? '-- เลือกเขต --' : '-- เลือกสาขา --';
+            populateCompareSelect(document.getElementById('compare1'), values, placeholder);
+            populateCompareSelect(document.getElementById('compare2'), values, placeholder);
+        }
+
+        function switchCompareLevel(level) {
+            compareLevel = level;
+            initCompareSelects(); // resets selections since branch/zone value sets differ
+            renderComparison();
         }
 
         function switchMonth(month) {
@@ -497,6 +576,7 @@
             // Render Initial
             updateDashboard(processedData);
             renderComparison();
+            renderOverallComparison();
         });
 
         // ---------------- NAVIGATION ----------------
@@ -717,8 +797,11 @@
             const b1 = document.getElementById('compare1').value;
             const b2 = document.getElementById('compare2').value;
 
-            const getStats = (month, branchName) => {
-                const subset = buildProcessed(month).filter(d => d.Branch === branchName);
+            const unitField = compareLevel === 'Zone' ? 'Zone' : 'Branch';
+            const unitLabelTh = compareLevel === 'Zone' ? 'เขต' : 'สาขา';
+
+            const getStats = (month, unitValue) => {
+                const subset = buildProcessed(month).filter(d => d[unitField] === unitValue);
                 return {
                     subset,
                     count: subset.length,
@@ -750,7 +833,7 @@
                 if(listContainer) {
                     listContainer.innerHTML = '';
                     if (stats.subset.length === 0) {
-                        listContainer.innerHTML = '<p class="text-xs text-gray-400 italic">ไม่มีข้อมูลสาขานี้ในเดือน ' + month + '</p>';
+                        listContainer.innerHTML = '<p class="text-xs text-gray-400 italic">ไม่มีข้อมูล' + unitLabelTh + 'นี้ในเดือน ' + month + '</p>';
                     }
                     stats.subset.forEach(item => {
                         const el = document.createElement('div');
@@ -797,6 +880,68 @@
             } else {
                 deltaPanel.classList.add('hidden');
             }
+        }
+
+        // ---------------- OVERALL (PORTFOLIO) COMPARISON ----------------
+        function renderOverallComparison() {
+            const monthA = document.getElementById('overallMonthA').value;
+            const monthB = document.getElementById('overallMonthB').value;
+            const sameZoneOnly = document.getElementById('overallSameZoneOnly').checked;
+
+            let dataA = buildProcessed(monthA);
+            let dataB = buildProcessed(monthB);
+
+            const noteEl = document.getElementById('overallCoverageNote');
+
+            if (sameZoneOnly) {
+                const zonesA = new Set(dataA.map(d => d.Zone));
+                const zonesB = new Set(dataB.map(d => d.Zone));
+                const commonZones = [...zonesA].filter(z => zonesB.has(z)).sort((a,b)=>parseInt(a)-parseInt(b));
+                const onlyInA = [...zonesA].filter(z => !zonesB.has(z)).sort((a,b)=>parseInt(a)-parseInt(b));
+                const onlyInB = [...zonesB].filter(z => !zonesA.has(z)).sort((a,b)=>parseInt(a)-parseInt(b));
+
+                dataA = dataA.filter(d => commonZones.includes(d.Zone));
+                dataB = dataB.filter(d => commonZones.includes(d.Zone));
+
+                let msg = 'เทียบเฉพาะเขต ' + (commonZones.join(', ') || '-') + ' (มีข้อมูลครบทั้ง ' + monthA + ' และ ' + monthB + ')';
+                if (onlyInA.length) msg += ' | เขต ' + onlyInA.join(', ') + ' มีเฉพาะใน ' + monthA + ' (ยังไม่นับรวม)';
+                if (onlyInB.length) msg += ' | เขต ' + onlyInB.join(', ') + ' มีเฉพาะใน ' + monthB + ' (ยังไม่นับรวม)';
+                noteEl.innerText = msg;
+                noteEl.classList.remove('hidden');
+            } else {
+                noteEl.innerText = 'รวมทุกเขตของแต่ละเดือนตามที่มีจริง (ถ้าบางเขตยังไม่มีข้อมูลอัพเดทในเดือนหลัง ตัวเลขจะติดลบมากผิดปกติ ไม่ได้แปลว่าลูกค้าหายจริง)';
+                noteEl.classList.remove('hidden');
+            }
+
+            const agg = (rows) => ({
+                count: rows.length,
+                val: rows.reduce((s,i)=>s+i._totalVal,0),
+                ig: rows.reduce((s,i)=>s+i._volIG,0),
+                ic: rows.reduce((s,i)=>s+i._volIC,0)
+            });
+
+            const a = agg(dataA);
+            const b = agg(dataB);
+
+            document.getElementById('overall-a-clients').innerText = a.count.toLocaleString();
+            document.getElementById('overall-b-clients').innerText = b.count.toLocaleString();
+            document.getElementById('overall-a-value').innerText = formatMoney(a.val);
+            document.getElementById('overall-b-value').innerText = formatMoney(b.val);
+            document.getElementById('overall-a-ig').innerText = a.ig.toLocaleString();
+            document.getElementById('overall-b-ig').innerText = b.ig.toLocaleString();
+            document.getElementById('overall-a-ic').innerText = a.ic.toLocaleString();
+            document.getElementById('overall-b-ic').innerText = b.ic.toLocaleString();
+
+            const setDelta = (id, num, isMoney) => {
+                const d = formatDelta(num, isMoney);
+                const el = document.getElementById(id);
+                el.innerText = d.display;
+                el.className = 'text-xl font-bold ' + d.colorClass;
+            };
+            setDelta('overall-delta-clients', b.count - a.count, false);
+            setDelta('overall-delta-value', b.val - a.val, true);
+            setDelta('overall-delta-ig', b.ig - a.ig, false);
+            setDelta('overall-delta-ic', b.ic - a.ic, false);
         }
 
     </script>
